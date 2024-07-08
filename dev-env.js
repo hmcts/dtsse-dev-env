@@ -16,7 +16,7 @@ const user = (await $`whoami`.text()).trim();
 const namespace = product;
 const chartName = product + '-' + component;
 
-await ensurePreviewChartExists(product, component);
+// await ensurePreviewChartExists(product, component);
 
 if (argv.delete) {
   await destroy();
@@ -110,10 +110,12 @@ function getSecretsFromJenkinsFile(jenkinsFile) {
     .match(/def secrets = (.*?)(?=\n\n)/s)[1]
     .replaceAll('[', '{')
     .replaceAll(']', '}')
-    .replaceAll(/secret\((.*?), (.*?)\)/g, '$1: $2')
+    .replaceAll(/secret\((.*?),\s*(.*?)\)/g, '$1: $2')
     .replace(/",\s*}/g, '"}')
+    .replace(/},\s}/g, '}\n}')
     .replace(/def secrets = /, '');
 
+  console.log('Secrets:', secrets);
   const secretJson = JSON.parse(secrets);
   const promises = Object.entries(secretJson).flatMap(getSecretsFromEnv);
 
