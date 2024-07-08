@@ -115,7 +115,6 @@ function getSecretsFromJenkinsFile(jenkinsFile) {
     .replace(/},\s}/g, '}\n}')
     .replace(/def secrets = /, '');
 
-  console.log('Secrets:', secrets);
   const secretJson = JSON.parse(secrets);
   const promises = Object.entries(secretJson).flatMap(getSecretsFromEnv);
 
