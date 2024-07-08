@@ -35,7 +35,7 @@ async function deploy() {
   const env = {
     CHANGE_ID: `${user}-DEV`,
     NAMESPACE: namespace,
-    SERVICE_NAME: chartName,
+    SERVICE_NAME: `${chartName}-dev-${user}`,
     SERVICE_FQDN: `${chartName}-dev-${user}.preview.platform.hmcts.net`,
     IMAGE_NAME: `hmctspublic.azurecr.io/${product}/${component}:latest`,
     ...Object.fromEntries(secrets),
