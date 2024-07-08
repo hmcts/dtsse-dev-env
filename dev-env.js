@@ -128,7 +128,7 @@ function getSecretsFromEnv([key, vaultSecrets]) {
     const secretValue =
       await $`az keyvault secret show --vault-name ${vaultName} -o tsv --query value --name ${secretName}`.text();
 
-    return [envVariable, secretValue];
+    return [envVariable, secretValue.trim()];
   });
 }
 
