@@ -1,0 +1,14 @@
+{
+  "name": "@hmcts/dev-env",
+  "packageManager": "npm@8.3.0",
+  "bin": "dev-env.js",
+  "version": "0.0.1",
+  "description": "A development environment for HMCTS",
+  "dependencies": {
+    "zx": "8.1.4"
+  },
+  "scripts": {
+    "start": "zx dev-env.js"
+  },
+  "type": "module"
+}
