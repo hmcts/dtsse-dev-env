@@ -31,12 +31,13 @@ async function deploy() {
   const tenantId = '531ff96d-0ae9-462a-8d2d-bec7c0b42082';
   const gitRemote = (await $`git config --get remote.origin.url`.text()).trim();
   const gitUrl = 'https://' + gitRemote.replace('git@', '').replace(':', '/');
+  const serviceFqdn = `${chartName}-dev-${user}.preview.platform.hmcts.net`;
 
   const env = {
     CHANGE_ID: `${user}-DEV`,
     NAMESPACE: namespace,
     SERVICE_NAME: `${chartName}-dev-${user}`,
-    SERVICE_FQDN: `${chartName}-dev-${user}.preview.platform.hmcts.net`,
+    SERVICE_FQDN: serviceFqdn,
     IMAGE_NAME: `hmctspublic.azurecr.io/${product}/${component}:latest`,
     ...Object.fromEntries(secrets),
   };
@@ -73,9 +74,7 @@ async function deploy() {
   await $`rm -rf charts/${chartName}/values.preview.yaml charts/${chartName}/Chart.lock charts/${chartName}/charts`;
 
   console.log('Setting up mirrord...');
-  const podName = (
-    await $`kubectl get pods -n ${namespace} -l app.kubernetes.io/name=${chartName}-dev-${user}-${type} -o jsonpath='{.items[0].metadata.name}'`.text()
-  ).trim();
+  const podName = (await $`kubectl get pods -n ${namespace} -l app.kubernetes.io/name=${chartName}-dev-${user}-${type} -o jsonpath='{.items[0].metadata.name}'`.text()).trim();
   const mirrordConfig = {
     feature: {
       network: {
@@ -98,6 +97,25 @@ async function deploy() {
   };
 
   await fs.writeJson('.mirrord/mirrord.json', mirrordConfig, { spaces: 2 });
+
+  console.log('The following environment variables have been set:\n');
+  console.log(`TEST_URL=https://${serviceFqdn}`);
+  await $`export TEST_URL=https://${serviceFqdn}`;
+
+  const ingress = await $`kubectl get ingress -n ${namespace} -l app.kubernetes.io/instance=${chartName}-dev-${user} -o json`.text();
+  const ingressJson = JSON.parse(ingress);
+  const ingressHosts = ingressJson.items.map(item => ([item.metadata.name, item.spec.rules[0].host]));
+
+  for (const [name, host] of ingressHosts) {
+    if (name !== `${chartName}-dev-${user}-${type}`) {
+      const serviceName = name.replace(`${chartName}-dev-${user}-`, '');
+      const serviceUrlName = serviceName.toUpperCase().replaceAll('-', '_') + '_URL';
+
+      console.log(`${serviceUrlName}=https://${host}`);
+      await $`export ${serviceUrlName}=https://${host}`;
+    }
+  }
+
 }
 
 async function deleteDeployment() {
