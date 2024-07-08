@@ -16,7 +16,7 @@ const user = (await $`whoami`.text()).trim();
 const namespace = product;
 const chartName = product + '-' + component;
 
-// await ensurePreviewChartExists(product, component);
+await ensurePreviewChartExists(product, component);
 
 if (argv.delete) {
   await deleteDeployment();
