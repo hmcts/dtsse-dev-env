@@ -20,7 +20,7 @@ Run the command from your project root directory. The script will check for a He
 To clean up the environment, run:
 
 ```bash
-npx @hmcts/dev-dev --destroy
+npx @hmcts/dev-dev --delete
 ```
 
 ## Troubleshooting

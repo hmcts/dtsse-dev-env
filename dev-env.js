@@ -19,7 +19,7 @@ const chartName = product + '-' + component;
 // await ensurePreviewChartExists(product, component);
 
 if (argv.delete) {
-  await destroy();
+  await deleteDeployment();
 } else {
   await deploy();
 }
@@ -100,8 +100,8 @@ async function deploy() {
   await fs.writeJson('.mirrord/mirrord.json', mirrordConfig, { spaces: 2 });
 }
 
-async function destroy() {
-  console.log('Destroying helm chart...');
+async function deleteDeployment() {
+  console.log('Deleting helm chart...');
   await $`helm uninstall ${chartName}-dev-${user} --namespace ${namespace}`;
 }
 
