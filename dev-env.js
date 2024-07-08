@@ -53,7 +53,7 @@ async function deploy() {
   const currentContext = (await $`kubectl config current-context`.text()).trim();
 
   console.log(`Deploying helm chart to ${currentContext}...`);
-  await $`helm upgrade ${chartName}-dev-${user} charts/${chartName} \
+  await $({quiet: true})`helm upgrade ${chartName}-dev-${user} charts/${chartName} \
  -f charts/${chartName}/values.preview.yaml \
  --set global.tenantId=${tenantId} \
  --set global.environment=${environment} \
@@ -98,9 +98,9 @@ async function deploy() {
 
   await fs.writeJson('.mirrord/mirrord.json', mirrordConfig, { spaces: 2 });
 
-  console.log('The following environment variables have been set:\n');
+  console.log('The following environment variables have been set in .env.local:\n');
   console.log(`TEST_URL=https://${serviceFqdn}`);
-  await $`export TEST_URL=https://${serviceFqdn}`;
+  let envFile = `TEST_URL=https://${serviceFqdn}\n`;
 
   const ingress = await $`kubectl get ingress -n ${namespace} -l app.kubernetes.io/instance=${chartName}-dev-${user} -o json`.text();
   const ingressJson = JSON.parse(ingress);
@@ -112,10 +112,11 @@ async function deploy() {
       const serviceUrlName = serviceName.toUpperCase().replaceAll('-', '_') + '_URL';
 
       console.log(`${serviceUrlName}=https://${host}`);
-      await $`export ${serviceUrlName}=https://${host}`;
+      envFile += `${serviceUrlName}=https://${host}\n`;
     }
   }
 
+  await fs.writeFile('.env.local', envFile);
 }
 
 async function deleteDeployment() {
