@@ -4,7 +4,7 @@
   "bin": {
     "dev-env": "dev-env.js"
   },
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A development environment for HMCTS",
   "dependencies": {
     "zx": "8.1.4"
