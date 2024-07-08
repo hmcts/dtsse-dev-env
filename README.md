@@ -23,3 +23,13 @@ To clean up the environment, run:
 npx @hmcts/dev-dev --destroy
 ```
 
+## Troubleshooting
+
+If you encounter an issue fetching the Helm dependencies, you may need to re-add the hmctspublic repository.
+
+```bash
+helm repo remove hmctspublic
+helm repo add hmctspublic https://hmctspublic.azurecr.io/helm/v1/repo/
+```
+
+For help, message #rse-dev-tools on Slack.
