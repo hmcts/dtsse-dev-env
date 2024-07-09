@@ -17,6 +17,13 @@ npx @hmcts/dev-dev
 
 Run the command from your project root directory. The script will check for a Helm chart and Jenkinsfile.
 
+To use a specific Preview template, run:
+
+```bash 
+#e.g. npx @hmcts/dev-dev --template charts/app/values.custom.template.yaml
+npx @hmcts/dev-dev --template <template> 
+```
+
 To clean up the environment, run:
 
 ```bash
