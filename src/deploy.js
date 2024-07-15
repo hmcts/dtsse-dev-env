@@ -20,7 +20,15 @@ export async function deploy(product, component, type, user, namespace, chartNam
   };
 
   console.log(`Creating values.preview.yaml from ${chalk.bold(chartFilename)}...`);
-  await $({ env })`cat ${chartFilename} | envsubst | tee charts/${chartName}/values.preview.yaml`;
+  await $({ env })`cat ${chartFilename} | envsubst > charts/${chartName}/values.preview.yaml`;
+
+  let baseTemplate = '';
+
+  if (await fs.exists(`charts/${chartName}/values.template.yaml`)) {
+    console.log(`Creating values.templated.yaml from ${chalk.bold(`charts/${chartName}/values.template.yaml`)}...`);
+    await $({ env })`cat charts/${chartName}/values.template.yaml | envsubst > charts/${chartName}/values.templated.yaml`;
+    baseTemplate = `-f charts/${chartName}/values.templated.yaml`;
+  }
 
   console.log('Fetching helm dependencies...');
   await $`helm dependency update charts/${chartName}`;
@@ -28,7 +36,7 @@ export async function deploy(product, component, type, user, namespace, chartNam
   const currentContext = (await $`kubectl config current-context`.text()).trim();
 
   console.log(`Deploying helm chart to ${chalk.yellow.underline.bold(currentContext)}...`);
-  await $({quiet: true})`helm upgrade ${chartName}-dev-${user} charts/${chartName} \
+  await $({quiet: true})`helm upgrade ${chartName}-dev-${user} charts/${chartName} ${baseTemplate} \
  -f charts/${chartName}/values.preview.yaml \
  --set global.tenantId=${tenantId} \
  --set global.environment=${environment} \
@@ -77,4 +85,5 @@ function getServiceEnvVarName(name, chartName, user) {
 async function cleanup(chartName) {
   console.log('Cleaning up...');
   await $`rm -rf charts/${chartName}/values.preview.yaml charts/${chartName}/Chart.lock charts/${chartName}/charts`;
+  await $`rm -f charts/${chartName}/values.templated.yaml`;
 }

@@ -9,7 +9,7 @@ import { processJenkinsfile } from "./jenkins.js";
 await checkPrerequisites();
 
 const { product, component, type, jenkinsFile } = await processJenkinsfile();
-const user = (await $`whoami`.text()).trim();
+const user = (await $`whoami`.text()).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 const namespace = product;
 const chartName = product + '-' + component;
 const chartFilename = await ensurePreviewChartExists(product, component, argv.template);
