@@ -1,4 +1,3 @@
-import "zx/globals";
 
 export async function checkPrerequisites() {
   await Promise.all([

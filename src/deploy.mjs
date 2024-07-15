@@ -1,5 +1,5 @@
-import { getSecretsFromJenkinsFile } from "./vault.js";
-import { createMirrordConfig } from "./mirrord.js";
+import { getSecretsFromJenkinsFile } from "./vault.mjs";
+import { createMirrordConfig } from "./mirrord.mjs";
 
 const environment = 'aat';
 const tenantId = '531ff96d-0ae9-462a-8d2d-bec7c0b42082';
@@ -20,38 +20,44 @@ export async function deploy(product, component, type, user, namespace, chartNam
   };
 
   console.log(`Creating values.preview.yaml from ${chalk.bold(chartFilename)}...`);
-  await $({ env })`cat ${chartFilename} | envsubst > charts/${chartName}/values.preview.yaml`;
-
-  let baseTemplate = '';
-
-  if (await fs.exists(`charts/${chartName}/values.template.yaml`)) {
-    console.log(`Creating values.templated.yaml from ${chalk.bold(`charts/${chartName}/values.template.yaml`)}...`);
-    await $({ env })`cat charts/${chartName}/values.template.yaml | envsubst > charts/${chartName}/values.templated.yaml`;
-    baseTemplate = `-f charts/${chartName}/values.templated.yaml`;
-  }
+  await $({env})`cat ${chartFilename} | envsubst > charts/${chartName}/values.preview.yaml`;
 
   console.log('Fetching helm dependencies...');
   await $`helm dependency update charts/${chartName}`;
 
   const currentContext = (await $`kubectl config current-context`.text()).trim();
 
+  const flags = [
+    `${chartName}-dev-${user}`,
+    `charts/${chartName}`
+  ];
+
+  if (await fs.exists(`charts/${chartName}/values.template.yaml`)) {
+    console.log(`Creating values.templated.yaml from ${chalk.bold(`charts/${chartName}/values.template.yaml`)}...`);
+    await $({env})`cat charts/${chartName}/values.template.yaml | envsubst > charts/${chartName}/values.templated.yaml`;
+    flags.push(`-f`, `charts/${chartName}/values.templated.yaml`);
+  }
+
+  flags.push(
+    `-f`, `charts/${chartName}/values.preview.yaml`,
+    `--set`, `global.tenantId=${tenantId}`,
+    `--set`, `global.environment=${environment}`,
+    `--set`, `global.enableKeyVaults=true`,
+    `--set`, `global.devMode=true`,
+    `--set`, `global.tags.teamName=${namespace}`,
+    `--set`, `global.tags.applicationName=${chartName}`,
+    `--set`, `global.tags.builtFrom=${gitUrl}`,
+    `--set`, `global.tags.businessArea=CFT`,
+    `--set`, `global.tags.environment=development`,
+    `--set`, `global.disableTraefikTls=`,
+    `--namespace`, namespace,
+    `--install`,
+    `--wait`,
+    `--timeout`, `1000s`
+  );
+
   console.log(`Deploying helm chart to ${chalk.yellow.underline.bold(currentContext)}...`);
-  await $({quiet: true})`helm upgrade ${chartName}-dev-${user} charts/${chartName} ${baseTemplate} \
- -f charts/${chartName}/values.preview.yaml \
- --set global.tenantId=${tenantId} \
- --set global.environment=${environment} \
- --set global.enableKeyVaults=true \
- --set global.devMode=true \
- --set global.tags.teamName=${namespace} \
- --set global.tags.applicationName=${chartName} \
- --set global.tags.builtFrom=${gitUrl} \
- --set global.tags.businessArea=CFT \
- --set global.tags.environment=development \
- --set global.disableTraefikTls= \
- --namespace ${namespace} \
- --install \
- --wait \
- --timeout 1000s`;
+  await $({quiet: true})`helm upgrade ${flags}`;
 
   await Promise.all([
     await cleanup(chartName),

@@ -1,4 +1,3 @@
-import "zx/globals";
 
 export async function processJenkinsfile() {
   const jenkinsFile = (await fs.readFile('Jenkinsfile_CNP', 'utf8')).replaceAll("'", '"');

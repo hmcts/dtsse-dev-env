@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 import "zx/globals";
-import { deploy } from "./deploy.js";
-import { deleteDeployment } from "./delete.js";
-import { checkPrerequisites, ensurePreviewChartExists } from "./prerequisites.js";
-import { processJenkinsfile } from "./jenkins.js";
+import { deploy } from "./deploy.mjs";
+import { deleteDeployment } from "./delete.mjs";
+import { checkPrerequisites, ensurePreviewChartExists } from "./prerequisites.mjs";
+import { processJenkinsfile } from "./jenkins.mjs";
 
 await checkPrerequisites();
 
