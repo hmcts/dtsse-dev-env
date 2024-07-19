@@ -2,7 +2,7 @@
   "name": "@hmcts/dev-env",
   "packageManager": "npm@8.3.0",
   "bin": {
-    "dev-env": "src/main.js"
+    "dev-env": "src/main.mjs"
   },
   "version": "0.0.15",
   "description": "A development environment for HMCTS",
