@@ -4,7 +4,7 @@
   "bin": {
     "dev-env": "src/main.mjs"
   },
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "A development environment for HMCTS",
   "dependencies": {
     "zx": "8.1.4"
