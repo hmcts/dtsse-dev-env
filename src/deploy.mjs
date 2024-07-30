@@ -1,44 +1,29 @@
 import { getSecretsFromJenkinsFile } from "./vault.mjs";
 import { createMirrordConfig } from "./mirrord.mjs";
+import envsub from "envsub/main.js";
 
 const environment = 'aat';
 const tenantId = '531ff96d-0ae9-462a-8d2d-bec7c0b42082';
 
 export async function deploy(product, component, type, user, namespace, chartName, jenkinsFile, chartFilename) {
-  console.log(`Loading secrets in ${chalk.bold("Jenkinsfile_CNP")} from vaults...`);
-  const secrets = await getSecretsFromJenkinsFile(jenkinsFile);
-  const gitRemote = (await $`git config --get remote.origin.url`.text()).trim();
-  const gitUrl = 'https://' + gitRemote.replace('git@', '').replace(':', '/');
   const serviceFqdn = `${chartName}-dev-${user}.preview.platform.hmcts.net`;
-  const env = {
-    CHANGE_ID: `${user}-DEV`,
-    NAMESPACE: namespace,
-    SERVICE_NAME: `${chartName}-dev-${user}`,
-    SERVICE_FQDN: serviceFqdn,
-    IMAGE_NAME: `hmctspublic.azurecr.io/${product}/${component}:latest`,
-    ...Object.fromEntries(secrets),
-  };
 
-  console.log(`Creating values.preview.yaml from ${chalk.bold(chartFilename)}...`);
-  await $({env})`cat ${chartFilename} | envsubst > charts/${chartName}/values.preview.yaml`;
+  const [gitUrl, currentContext] = await Promise.all([
+    getGitUrl(),
+    getCurrentContext(),
+    createHelmFiles(product, component, type, user, namespace, chartName, jenkinsFile, chartFilename),
+    fetchHelmDependencies(chartName)
+  ])
 
-  console.log('Fetching helm dependencies...');
-  await $`helm dependency update charts/${chartName}`;
-
-  const currentContext = (await $`kubectl config current-context`.text()).trim();
+  if (!currentContext.includes('preview')) {
+    console.log(`You are not in the preview cluster. Please run ${chalk.bold('kubectl config use-context cft-preview-NN-aks')}`);
+    await cleanup(chartName);
+    return;
+  }
 
   const flags = [
     `${chartName}-dev-${user}`,
-    `charts/${chartName}`
-  ];
-
-  if (await fs.exists(`charts/${chartName}/values.template.yaml`)) {
-    console.log(`Creating values.templated.yaml from ${chalk.bold(`charts/${chartName}/values.template.yaml`)}...`);
-    await $({env})`cat charts/${chartName}/values.template.yaml | envsubst > charts/${chartName}/values.templated.yaml`;
-    flags.push(`-f`, `charts/${chartName}/values.templated.yaml`);
-  }
-
-  flags.push(
+    `charts/${chartName}`,
     `-f`, `charts/${chartName}/values.preview.yaml`,
     `--set`, `global.tenantId=${tenantId}`,
     `--set`, `global.environment=${environment}`,
@@ -54,7 +39,11 @@ export async function deploy(product, component, type, user, namespace, chartNam
     `--install`,
     `--wait`,
     `--timeout`, `1000s`
-  );
+  ];
+
+  if (await fs.exists(`charts/${chartName}/values.templated.yaml`)) {
+    flags.push(`-f`, `charts/${chartName}/values.templated.yaml`);
+  }
 
   console.log(`Deploying helm chart to ${chalk.yellow.underline.bold(currentContext)}...`);
   await $({quiet: true})`helm upgrade ${flags}`;
@@ -92,4 +81,50 @@ async function cleanup(chartName) {
   console.log('Cleaning up...');
   await $`rm -rf charts/${chartName}/values.preview.yaml charts/${chartName}/Chart.lock charts/${chartName}/charts`;
   await $`rm -f charts/${chartName}/values.templated.yaml`;
+}
+
+async function createHelmFiles(product, component, type, user, namespace, chartName, jenkinsFile, chartFilename) {
+  console.log(`Loading secrets in ${chalk.bold("Jenkinsfile_CNP")} from vaults...`);
+  const secrets = await getSecretsFromJenkinsFile(jenkinsFile);
+  const serviceFqdn = `${chartName}-dev-${user}.preview.platform.hmcts.net`;
+  const env = {
+    CHANGE_ID: `${user}-DEV`,
+    NAMESPACE: namespace,
+    SERVICE_NAME: `${chartName}-dev-${user}`,
+    SERVICE_FQDN: serviceFqdn,
+    IMAGE_NAME: `hmctspublic.azurecr.io/${product}/${component}:latest`,
+    ...Object.fromEntries(secrets),
+  };
+
+  console.log(`Creating values.preview.yaml from ${chalk.bold(chartFilename)}...`);
+  const envs = Object.entries(env).map(([name, value]) => ({name, value}));
+  await envsub({
+    templateFile: chartFilename,
+    outputFile: `charts/${chartName}/values.preview.yaml`,
+    options: {envs}
+  });
+
+  if (await fs.exists(`charts/${chartName}/values.template.yaml`)) {
+    console.log(`Creating values.templated.yaml from ${chalk.bold(`charts/${chartName}/values.template.yaml`)}...`);
+
+    await envsub({
+      templateFile: `charts/${chartName}/values.template.yaml`,
+      outputFile: `charts/${chartName}/values.templated.yaml`,
+      options: {envs}
+    });
+  }
+}
+
+async function fetchHelmDependencies(chartName) {
+  console.log('Fetching Helm dependencies...');
+  await $`helm dependency build charts/${chartName}`;
+}
+
+async function getCurrentContext() {
+  return (await $`kubectl config current-context`.text()).trim();
+}
+
+async function getGitUrl() {
+  const gitRemote = (await $`git config --get remote.origin.url`.text()).trim();
+  return 'https://' + gitRemote.replace('git@', '').replace(':', '/');
 }
