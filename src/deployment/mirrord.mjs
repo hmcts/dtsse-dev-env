@@ -1,7 +1,7 @@
 
-export async function createMirrordConfig(namespace, chartName, user, type) {
+export async function createMirrordConfig(namespace, releaseName, type) {
   try {
-    const podName = (await $({quiet: true})`kubectl get pods -n ${namespace} -l app.kubernetes.io/name=${chartName}-dev-${user}-${type} -o jsonpath='{.items[0].metadata.name}'`.text()).trim();
+    const podName = (await $({quiet: true})`kubectl get pods -n ${namespace} -l app.kubernetes.io/name=${releaseName}-${type} -o jsonpath='{.items[0].metadata.name}'`.text()).trim();
     const mirrordConfig = {
       feature: {
         network: {
@@ -27,7 +27,7 @@ export async function createMirrordConfig(namespace, chartName, user, type) {
     await fs.writeJson('.mirrord/mirrord.json', mirrordConfig, { spaces: 2 });
   }
   catch (e) {
-    console.log(`Could not find pod of type ${type} for ${chartName}-dev-${user} in namespace ${namespace}. Is this a ccd-definition repository?`);
+    console.log(`Could not find pod of type ${type} for ${releaseName} in namespace ${namespace}. Is this a ccd-definition repository?`);
   }
 
 }

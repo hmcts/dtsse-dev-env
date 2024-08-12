@@ -6,12 +6,13 @@ const environment = 'aat';
 const tenantId = '531ff96d-0ae9-462a-8d2d-bec7c0b42082';
 
 export async function deploy(product, component, type, user, namespace, chartName, jenkinsFile, chartFilename) {
-  const serviceFqdn = `${chartName}-dev-${user}.preview.platform.hmcts.net`;
+  const releaseName = `${chartName}-dev-pr-${user}`;
+  const serviceFqdn = `${releaseName}.preview.platform.hmcts.net`;
 
   const [gitUrl, currentContext] = await Promise.all([
     getGitUrl(),
     getCurrentContext(),
-    createHelmFiles(product, component, type, user, namespace, chartName, jenkinsFile, chartFilename),
+    createHelmFiles(product, component, releaseName, user, namespace, chartName, jenkinsFile, chartFilename),
     fetchHelmDependencies(chartName)
   ])
 
@@ -22,7 +23,7 @@ export async function deploy(product, component, type, user, namespace, chartNam
   }
 
   const flags = [
-    `${chartName}-dev-${user}`,
+    releaseName,
     `charts/${chartName}`,
     `-f`, `charts/${chartName}/values.preview.yaml`,
     `--set`, `global.tenantId=${tenantId}`,
@@ -50,18 +51,18 @@ export async function deploy(product, component, type, user, namespace, chartNam
 
   await Promise.all([
     await cleanup(chartName),
-    await createMirrordConfig(namespace, chartName, user, type),
-    await createEnvFile(serviceFqdn, user, namespace, chartName, type)
+    await createMirrordConfig(namespace, releaseName, type),
+    await createEnvFile(serviceFqdn, namespace, type, releaseName)
   ]);
 }
 
-async function createEnvFile(serviceFqdn, user, namespace, chartName, type) {
-  const ingress = await $`kubectl get ingress -n ${namespace} -l app.kubernetes.io/instance=${chartName}-dev-${user} -o json`.text();
+async function createEnvFile(serviceFqdn, namespace, type, releaseName) {
+  const ingress = await $`kubectl get ingress -n ${namespace} -l app.kubernetes.io/instance=${releaseName} -o json`.text();
   const ingressJson = JSON.parse(ingress);
   const envVars = ingressJson.items
     .map(item => ([item.metadata.name, item.spec.rules[0].host]))
-    .filter(([name]) => name !== `${chartName}-dev-${user}-${type}`)
-    .map(([name, host]) => [getServiceEnvVarName(name, chartName, user), host])
+    .filter(([name]) => name !== `${releaseName}-${type}`)
+    .map(([name, host]) => [getServiceEnvVarName(name, releaseName), host])
     .map(values => values.join('=https://'))
     .join('\n') + `\nTEST_URL=https://${serviceFqdn}\n`;
 
@@ -70,9 +71,9 @@ async function createEnvFile(serviceFqdn, user, namespace, chartName, type) {
   console.log(`Environment variables for service URLs have been set in ${chalk.bold('.env.local')}`);
 }
 
-function getServiceEnvVarName(name, chartName, user) {
+function getServiceEnvVarName(name, releaseName) {
   return name
-    .replace(`${chartName}-dev-${user}-`, '')
+    .replace(`${releaseName}-`, '')
     .toUpperCase()
     .replaceAll('-', '_') + '_URL';
 }
@@ -83,15 +84,14 @@ async function cleanup(chartName) {
   await $`rm -f charts/${chartName}/values.templated.yaml`;
 }
 
-async function createHelmFiles(product, component, type, user, namespace, chartName, jenkinsFile, chartFilename) {
+async function createHelmFiles(product, component, releaseName, user, namespace, chartName, jenkinsFile, chartFilename) {
   console.log(`Loading secrets in ${chalk.bold("Jenkinsfile_CNP")} from vaults...`);
   const secrets = await getSecretsFromJenkinsFile(jenkinsFile);
-  const serviceFqdn = `${chartName}-dev-${user}.preview.platform.hmcts.net`;
   const env = {
     CHANGE_ID: `${user}-DEV`,
     NAMESPACE: namespace,
-    SERVICE_NAME: `${chartName}-dev-${user}`,
-    SERVICE_FQDN: serviceFqdn,
+    SERVICE_NAME: releaseName,
+    SERVICE_FQDN: `${releaseName}.preview.platform.hmcts.net`,
     IMAGE_NAME: `hmctspublic.azurecr.io/${product}/${component}:latest`,
     ...Object.fromEntries(secrets),
   };
