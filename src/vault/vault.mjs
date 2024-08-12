@@ -18,10 +18,11 @@ export function getSecretsFromJenkinsFile(jenkinsFile) {
 function getSecretsFromEnv([key, vaultSecrets]) {
   const vaultName = key.replace('${env}', 'aat');
 
-  return Object.entries(vaultSecrets).map(async ([secretName, envVariable]) => {
-    const secretValue =
-      await $`az keyvault secret show --vault-name ${vaultName} -o tsv --query value --name ${secretName}`.text();
+  return Object.entries(vaultSecrets)
+    .map(async ([secretName, envVariable]) => ([envVariable, await getSecretFromVault(vaultName, secretName)]));
+}
 
-    return [envVariable, secretValue.trim()];
-  });
+export async function getSecretFromVault(vaultName, secretName) {
+  const result = await $`az keyvault secret show --vault-name ${vaultName} -o tsv --query value --name ${secretName}`.text();
+  return result.trim();
 }

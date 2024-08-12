@@ -1,4 +1,4 @@
-import { getSecretsFromJenkinsFile } from "./vault.mjs";
+import { getSecretsFromJenkinsFile } from "../vault/vault.mjs";
 import { createMirrordConfig } from "./mirrord.mjs";
 import envsub from "envsub/main.js";
 

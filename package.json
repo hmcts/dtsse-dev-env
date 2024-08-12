@@ -7,11 +7,13 @@
   "version": "0.0.17",
   "description": "A development environment for HMCTS",
   "dependencies": {
+    "@dotenvx/dotenvx": "^1.6.4",
     "envsub": "^4.1.0",
+    "totp-generator": "^1.0.0",
     "zx": "8.1.4"
   },
   "scripts": {
-    "start": "zx src/dev-env.js"
+    "start": "zx src/main.mjs"
   },
   "type": "module"
 }
