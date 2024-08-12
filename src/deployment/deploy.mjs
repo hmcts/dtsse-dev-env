@@ -6,7 +6,7 @@ const environment = 'aat';
 const tenantId = '531ff96d-0ae9-462a-8d2d-bec7c0b42082';
 
 export async function deploy(product, component, type, user, namespace, chartName, jenkinsFile, chartFilename) {
-  const releaseName = `${chartName}-dev-pr-${user}`;
+  const releaseName = `${chartName}-dev-pr-0-${user}`; // pr-0 is required for the idam redirect whitelist
   const serviceFqdn = `${releaseName}.preview.platform.hmcts.net`;
 
   const [gitUrl, currentContext] = await Promise.all([
