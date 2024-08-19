@@ -25,7 +25,6 @@ export async function deploy(product, component, type, user, namespace, chartNam
   const flags = [
     releaseName,
     `charts/${chartName}`,
-    `-f`, `charts/${chartName}/values.preview.yaml`,
     `--set`, `global.tenantId=${tenantId}`,
     `--set`, `global.environment=${environment}`,
     `--set`, `global.enableKeyVaults=true`,
@@ -39,12 +38,15 @@ export async function deploy(product, component, type, user, namespace, chartNam
     `--namespace`, namespace,
     `--install`,
     `--wait`,
-    `--timeout`, `1000s`
+    `--timeout`, `1000s`,
+    `-f`, `charts/${chartName}/values.yaml`,
   ];
 
   if (await fs.exists(`charts/${chartName}/values.templated.yaml`)) {
     flags.push(`-f`, `charts/${chartName}/values.templated.yaml`);
   }
+
+  flags.push(`-f`, `charts/${chartName}/values.preview.yaml`);
 
   console.log(`Deploying helm chart to ${chalk.yellow.underline.bold(currentContext)}...`);
   await $({quiet: true})`helm upgrade ${flags}`;

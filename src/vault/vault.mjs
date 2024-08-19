@@ -4,7 +4,7 @@ export function getSecretsFromJenkinsFile(jenkinsFile) {
     .match(/def secrets = (.*?)(?=\n\n)/s)[1]
     .replaceAll('[', '{')
     .replaceAll(']', '}')
-    .replaceAll(/secret\((.*?),\s*(.*?)\)/g, '$1: $2')
+    .replaceAll(/secret\((.*?),\s*(.*?)\)/g, '$2: $1')
     .replace(/",\s*}/g, '"}')
     .replace(/},\s}/g, '}\n}')
     .replace(/def secrets = /, '');
@@ -19,7 +19,7 @@ function getSecretsFromEnv([key, vaultSecrets]) {
   const vaultName = key.replace('${env}', 'aat');
 
   return Object.entries(vaultSecrets)
-    .map(async ([secretName, envVariable]) => ([envVariable, await getSecretFromVault(vaultName, secretName)]));
+    .map(async ([envVariable, secretName]) => ([envVariable, await getSecretFromVault(vaultName, secretName)]));
 }
 
 export async function getSecretFromVault(vaultName, secretName) {
