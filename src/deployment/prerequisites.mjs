@@ -36,16 +36,19 @@ async function ensureJenkinsFileExists() {
   }
 }
 
-export async function ensurePreviewChartExists(product, component, template = 'values.preview.template.yaml') {
+export async function ensurePreviewChartExists(product, component, template) {
   if (!await fs.exists(`charts/${product}-${component}/Chart.yaml`)) {
     console.error(`Chart not found. Ensure that you have a chart at charts/${product}-${component}/Chart.yaml.`);
     process.exit(1);
   }
 
-  if (!await fs.exists(`charts/${product}-${component}/${template}`)) {
-    console.error(`Preview template not found. Ensure it's located in charts/${product}-${component}/${template}.`);
+  if (!await fs.exists(`charts/${product}-${component}/values.preview.template.yaml`)) {
+    console.error(`Preview template not found. Ensure it's located in charts/${product}-${component}/values.preview.template.yaml.`);
     process.exit(1);
   }
 
-  return `charts/${product}-${component}/${template}`;
+  if (template && !await fs.exists(template)) {
+    console.error(`Additional template not found: ${template}.`);
+    process.exit(1);
+  }
 }

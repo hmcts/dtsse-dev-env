@@ -12,7 +12,7 @@ This package will use Helm to deploy a development environment based on the Prev
 ## Usage
 
 ```bash
-npx @hmcts/dev-dev
+npx @hmcts/dev-env
 ```
 
 Run the command from your project root directory. The script will check for a Helm chart and Jenkinsfile.
@@ -20,14 +20,14 @@ Run the command from your project root directory. The script will check for a He
 To use a specific Preview template, run:
 
 ```bash 
-#e.g. npx @hmcts/dev-dev --template charts/app/values.custom.template.yaml
-npx @hmcts/dev-dev --template <template> 
+#e.g. npx @hmcts/dev-env --template charts/app/values.custom.template.yaml
+npx @hmcts/dev-env --template <template> 
 ```
 
 To clean up the environment, run:
 
 ```bash
-npx @hmcts/dev-dev --delete
+npx @hmcts/dev-env --delete
 ```
 
 ## Troubleshooting

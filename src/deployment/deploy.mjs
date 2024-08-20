@@ -5,14 +5,14 @@ import envsub from "envsub/main.js";
 const environment = 'aat';
 const tenantId = '531ff96d-0ae9-462a-8d2d-bec7c0b42082';
 
-export async function deploy(product, component, type, user, namespace, chartName, jenkinsFile, chartFilename) {
+export async function deploy(product, component, type, user, namespace, chartName, jenkinsFile, additionalChart) {
   const releaseName = `${chartName}-dev-pr-0-${user}`; // pr-0 is required for the idam redirect whitelist
   const serviceFqdn = `${releaseName}.preview.platform.hmcts.net`;
 
   const [gitUrl, currentContext] = await Promise.all([
     getGitUrl(),
     getCurrentContext(),
-    createHelmFiles(product, component, releaseName, user, namespace, chartName, jenkinsFile, chartFilename),
+    createHelmFiles(product, component, releaseName, user, namespace, chartName, jenkinsFile, additionalChart),
     fetchHelmDependencies(chartName)
   ])
 
@@ -48,6 +48,10 @@ export async function deploy(product, component, type, user, namespace, chartNam
 
   flags.push(`-f`, `charts/${chartName}/values.preview.yaml`);
 
+  if (await fs.exists(`charts/${chartName}/values.additional.yaml`)) {
+    flags.push(`-f`, `charts/${chartName}/values.additional.yaml`);
+  }
+
   console.log(`Deploying helm chart to ${chalk.yellow.underline.bold(currentContext)}...`);
   await $({quiet: true})`helm upgrade ${flags}`;
 
@@ -82,11 +86,10 @@ function getServiceEnvVarName(name, releaseName) {
 
 async function cleanup(chartName) {
   console.log('Cleaning up...');
-  await $`rm -rf charts/${chartName}/values.preview.yaml charts/${chartName}/Chart.lock charts/${chartName}/charts`;
-  await $`rm -f charts/${chartName}/values.templated.yaml`;
+  await $`rm -rf charts/${chartName}/values.preview.yaml charts/${chartName}/Chart.lock charts/${chartName}/charts charts/${chartName}/values.templated.yaml charts/${chartName}/values.additional.yaml`;
 }
 
-async function createHelmFiles(product, component, releaseName, user, namespace, chartName, jenkinsFile, chartFilename) {
+async function createHelmFiles(product, component, releaseName, user, namespace, chartName, jenkinsFile, additionalChart) {
   console.log(`Loading secrets in ${chalk.bold("Jenkinsfile_CNP")} from vaults...`);
   const secrets = await getSecretsFromJenkinsFile(jenkinsFile);
   const env = {
@@ -98,13 +101,23 @@ async function createHelmFiles(product, component, releaseName, user, namespace,
     ...Object.fromEntries(secrets),
   };
 
-  console.log(`Creating values.preview.yaml from ${chalk.bold(chartFilename)}...`);
   const envs = Object.entries(env).map(([name, value]) => ({name, value}));
+
+  console.log(`Creating values.preview.yaml from ${chalk.bold('values.preview.template.yaml')}...`);
   await envsub({
-    templateFile: chartFilename,
+    templateFile: `charts/${chartName}/values.preview.template.yaml`,
     outputFile: `charts/${chartName}/values.preview.yaml`,
     options: {envs}
   });
+
+  if (additionalChart) {
+    console.log(`Creating values.additional.yaml from ${chalk.bold(additionalChart)}...`);
+    await envsub({
+      templateFile: additionalChart,
+      outputFile: `charts/${chartName}/values.additional.yaml`,
+      options: {envs}
+    });
+  }
 
   if (await fs.exists(`charts/${chartName}/values.template.yaml`)) {
     console.log(`Creating values.templated.yaml from ${chalk.bold(`charts/${chartName}/values.template.yaml`)}...`);
