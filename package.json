@@ -4,7 +4,7 @@
   "bin": {
     "dev-env": "src/main.mjs"
   },
-  "version": "0.0.22",
+  "version": "0.0.23",
   "description": "A development environment for HMCTS",
   "dependencies": {
     "@dotenvx/dotenvx": "^1.6.4",
