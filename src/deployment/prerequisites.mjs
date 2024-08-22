@@ -47,8 +47,8 @@ export async function ensurePreviewChartExists(product, component, template) {
     process.exit(1);
   }
 
-  if (template && !await fs.exists(template)) {
-    console.error(`Additional template not found: ${template}.`);
+  if (template && !await fs.exists(`charts/${product}-${component}/${template}`)) {
+    console.error(`Additional template not found: charts/${product}-${component}/${template}.`);
     process.exit(1);
   }
 }

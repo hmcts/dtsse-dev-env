@@ -113,7 +113,7 @@ async function createHelmFiles(product, component, releaseName, user, namespace,
   if (additionalChart) {
     console.log(`Creating values.additional.yaml from ${chalk.bold(additionalChart)}...`);
     await envsub({
-      templateFile: additionalChart,
+      templateFile: `charts/${chartName}/${additionalChart}`,
       outputFile: `charts/${chartName}/values.additional.yaml`,
       options: {envs}
     });
