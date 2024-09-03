@@ -1,13 +1,13 @@
 import { getSecretsFromJenkinsFile } from "../vault/vault.mjs";
 import { createMirrordConfig } from "./mirrord.mjs";
 import envsub from "envsub/main.js";
+import { getFqfn, getReleaseName } from "./release.mjs";
 
 const environment = 'aat';
 const tenantId = '531ff96d-0ae9-462a-8d2d-bec7c0b42082';
 
 export async function deploy(product, component, type, user, namespace, chartName, jenkinsFile, additionalChart) {
-  const releaseName = `${chartName}-dev-pr-1-${user}`; // pr-1 is required for the idam redirect whitelist
-  const serviceFqdn = `${releaseName}.preview.platform.hmcts.net`;
+  const releaseName = getReleaseName(chartName, user);
 
   const [gitUrl, currentContext] = await Promise.all([
     getGitUrl(),
@@ -58,11 +58,11 @@ export async function deploy(product, component, type, user, namespace, chartNam
   await Promise.all([
     await cleanup(chartName),
     await createMirrordConfig(namespace, releaseName, type),
-    await createEnvFile(serviceFqdn, namespace, type, releaseName)
+    await createEnvFile(namespace, type, releaseName)
   ]);
 }
 
-async function createEnvFile(serviceFqdn, namespace, type, releaseName) {
+async function createEnvFile(namespace, type, releaseName) {
   const ingress = await $`kubectl get ingress -n ${namespace} -l app.kubernetes.io/instance=${releaseName} -o json`.text();
   const ingressJson = JSON.parse(ingress);
   const envVars = ingressJson.items
@@ -70,7 +70,7 @@ async function createEnvFile(serviceFqdn, namespace, type, releaseName) {
     .filter(([name]) => name !== `${releaseName}-${type}`)
     .map(([name, host]) => [getServiceEnvVarName(name, releaseName), host])
     .map(values => values.join('=https://'))
-    .join('\n') + `\nTEST_URL=https://${serviceFqdn}\n`;
+    .join('\n') + `\nTEST_URL=https://${getFqfn(releaseName)}\n`;
 
   await fs.writeFile('.env.local', envVars);
 
@@ -96,7 +96,7 @@ async function createHelmFiles(product, component, releaseName, user, namespace,
     CHANGE_ID: `${user}-DEV`,
     NAMESPACE: namespace,
     SERVICE_NAME: releaseName,
-    SERVICE_FQDN: `${releaseName}.preview.platform.hmcts.net`,
+    SERVICE_FQDN: getFqfn(releaseName),
     IMAGE_NAME: `hmctspublic.azurecr.io/${product}/${component}:latest`,
     ...Object.fromEntries(secrets),
   };

@@ -10,7 +10,7 @@ import { importCcdDefinition } from "./ccd/import.mjs";
 await checkPrerequisites();
 
 const { product, component, type, jenkinsFile } = await processJenkinsfile();
-const user = (await $`whoami`.text()).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+const user = (await $`whoami`.text()).replace(/[^a-zA-Z0-9]/g, '').toLowerCase().substring(0, 8);
 const namespace = product;
 const chartName = product + '-' + component;
 await ensurePreviewChartExists(product, component, argv.template);
