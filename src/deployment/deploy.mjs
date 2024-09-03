@@ -7,6 +7,16 @@ const environment = 'aat';
 const tenantId = '531ff96d-0ae9-462a-8d2d-bec7c0b42082';
 
 export async function deploy(product, component, type, user, namespace, chartName, jenkinsFile, additionalChart) {
+  try {
+    await runDeploy(product, component, type, user, namespace, chartName, jenkinsFile, additionalChart);
+  } catch (e) {
+    console.error(e);
+  } finally {
+    await cleanup(chartName);
+  }
+}
+
+async function runDeploy(product, component, type, user, namespace, chartName, jenkinsFile, additionalChart) {
   const releaseName = getReleaseName(chartName, user);
 
   const [gitUrl, currentContext] = await Promise.all([
@@ -17,9 +27,7 @@ export async function deploy(product, component, type, user, namespace, chartNam
   ])
 
   if (!currentContext.includes('preview')) {
-    console.log(`You are not in the preview cluster. Please run ${chalk.bold('kubectl config use-context cft-preview-NN-aks')}`);
-    await cleanup(chartName);
-    return;
+    throw `You are not in the preview cluster. Please run ${chalk.bold('kubectl config use-context cft-preview-NN-aks')}`;
   }
 
   const flags = [
@@ -56,7 +64,6 @@ export async function deploy(product, component, type, user, namespace, chartNam
   await $({quiet: true})`helm upgrade ${flags}`;
 
   await Promise.all([
-    await cleanup(chartName),
     await createMirrordConfig(namespace, releaseName, type),
     await createEnvFile(namespace, type, releaseName)
   ]);
