@@ -74,19 +74,19 @@ async function createEnvFile(namespace, type, releaseName) {
   const ingressJson = JSON.parse(ingress);
   const envVars = ingressJson.items
     .map(item => ([item.metadata.name, item.spec.rules[0].host]))
-    .filter(([name]) => name !== `${releaseName}-${type}`)
-    .map(([name, host]) => [getServiceEnvVarName(name, releaseName), host])
+    .map(([name, host]) => [getServiceEnvVarName(name, releaseName, type), host])
     .map(values => values.join('=https://'))
-    .join('\n') + `\nTEST_URL=https://${getFqfn(releaseName)}\n`;
+    .join('\n') + '\n';
 
   await fs.writeFile('.env.local', envVars);
 
   console.log(`Environment variables for service URLs have been set in ${chalk.bold('.env.local')}`);
 }
 
-function getServiceEnvVarName(name, releaseName) {
+function getServiceEnvVarName(name, releaseName, type) {
   return name
     .replace(`${releaseName}-`, '')
+    .replace(type, 'TEST')
     .toUpperCase()
     .replaceAll('-', '_') + '_URL';
 }
