@@ -1,7 +1,8 @@
 
 export function getSecretsFromJenkinsFile(jenkinsFile) {
+  const secretStartIndex = jenkinsFile.indexOf('[', jenkinsFile.indexOf('def secrets = '));
   const secrets = jenkinsFile
-    .match(/def secrets = (.*?)(?=\n\n)/s)[1]
+    .substring(secretStartIndex, findLastClosingBracket(jenkinsFile, secretStartIndex) + 1)
     .replaceAll('[', '{')
     .replaceAll(']', '}')
     .replaceAll(/secret\((.*?),\s*(.*?)\)/g, '$2: $1')
@@ -13,6 +14,21 @@ export function getSecretsFromJenkinsFile(jenkinsFile) {
   const promises = Object.entries(secretJson).flatMap(getSecretsFromEnv);
 
   return Promise.all(promises);
+}
+
+function findLastClosingBracket(str, startIndex) {
+  let count = 0;
+  for (let i = startIndex; i < str.length; i++) {
+    if (str[i] === '[') {
+      count++;
+    } else if (str[i] === ']') {
+      count--;
+    }
+
+    if (count === 0) {
+      return i;
+    }
+  }
 }
 
 function getSecretsFromEnv([key, vaultSecrets]) {
