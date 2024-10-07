@@ -10,7 +10,7 @@
     "@dotenvx/dotenvx": "^1.6.4",
     "envsub": "^4.1.0",
     "totp-generator": "^1.0.0",
-    "zx": "8.1.4"
+    "zx": "8.1.9"
   },
   "scripts": {
     "start": "zx src/main.mjs"
