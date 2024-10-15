@@ -2,6 +2,7 @@ import { getSecretsFromJenkinsFile } from "../vault/vault.mjs";
 import { createMirrordConfig } from "./mirrord.mjs";
 import envsub from "envsub/main.js";
 import { getFqfn, getReleaseName } from "./release.mjs";
+import * as dotenvx from "@dotenvx/dotenvx";
 
 const environment = 'aat';
 const tenantId = '531ff96d-0ae9-462a-8d2d-bec7c0b42082';
@@ -107,6 +108,15 @@ async function createHelmFiles(product, component, releaseName, user, namespace,
     IMAGE_NAME: `hmctspublic.azurecr.io/${product}/${component}:latest`,
     ...Object.fromEntries(secrets),
   };
+
+  if (argv.env) {
+    console.log(`Loading additional environment variables for templating: ${chalk.bold(argv.env)}`);
+    dotenvx.config({
+      path: argv.env,
+      processEnv: env,
+      quiet: true,
+    });
+  }
 
   const envs = Object.entries(env).map(([name, value]) => ({name, value}));
 

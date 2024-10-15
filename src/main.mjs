@@ -18,7 +18,7 @@ await ensurePreviewChartExists(product, component, argv.template);
 if (argv.delete) {
   await deleteDeployment(chartName, user, namespace);
 } else if (argv['import-ccd']) {
-  await importCcdDefinition(argv['import-ccd']);
+  await importCcdDefinition();
 } else {
   await deploy(product, component, type, user, namespace, chartName, jenkinsFile, argv.template);
 }

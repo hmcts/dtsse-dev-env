@@ -24,6 +24,7 @@ export async function createMirrordConfig(namespace, releaseName, type) {
     };
 
     console.log('Creating .mirrord/mirrord.json config...');
+    await fs.ensureDir('.mirrord');
     await fs.writeJson('.mirrord/mirrord.json', mirrordConfig, { spaces: 2 });
   }
   catch (e) {
