@@ -8,6 +8,7 @@ export function getSecretsFromJenkinsFile(jenkinsFile) {
     .replaceAll(/secret\((.*?),\s*(.*?)\)/g, '$2: $1')
     .replace(/",\s*}/g, '"}')
     .replace(/},\s}/g, '}\n}')
+    .replaceAll(/\/\/.*/g, "")
     .replace(/def secrets = /, '');
 
   const secretJson = JSON.parse(secrets);
