@@ -100,7 +100,7 @@ async function createHelmFiles(product, component, releaseName, user, namespace,
   console.log(`Loading secrets in ${chalk.bold("Jenkinsfile_CNP")} from vaults...`);
   const secrets = await getSecretsFromJenkinsFile(jenkinsFile);
   const env = {
-    CHANGE_ID: `${user}-DEV`,
+    CHANGE_ID: `${user}-dev`,
     NAMESPACE: namespace,
     SERVICE_NAME: releaseName,
     SERVICE_FQDN: getFqfn(releaseName),
