@@ -1,6 +1,6 @@
 {
   "name": "@hmcts/dev-env",
-  "packageManager": "npm@8.3.0",
+  "packageManager": "npm@8.19.4",
   "bin": {
     "dev-env": "src/main.mjs"
   },
